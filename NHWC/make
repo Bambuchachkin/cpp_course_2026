@@ -1,0 +1,39 @@
+# ---------- настройки ----------
+CXX      := g++
+CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wpedantic
+TARGET   := cache_test
+
+# ВАЖНО: LFU.cpp и 2Q.cpp содержат шаблонные классы и подключаются
+# через #include в main.cpp. Их нельзя компилировать отдельно — иначе
+# получим duplicate symbols или unresolved external.
+#
+# Если какой-то из остальных .cpp (ARC, LIRS, ideal_cache, two_level_cache,
+# three_level_cache) НЕ шаблонный и компилируется как отдельная единица
+# трансляции — добавь его в SRCS и убери соответствующий #include из main.cpp.
+SRCS := main.cpp
+OBJS := $(SRCS:.cpp=.o)
+
+# ---------- цели ----------
+.PHONY: all run clean rebuild
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# Явные зависимости: main.o "включает" шаблонные .cpp,
+# поэтому при их правке main.o нужно пересобрать.
+main.o: LFU.cpp 2Q.cpp
+# Раскомментируй, когда добавишь остальные:
+# main.o: ARC.cpp LIRS.cpp ideal_cache.cpp two_level_cache.cpp three_level_cache.cpp
+
+run: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+rebuild: clean all
